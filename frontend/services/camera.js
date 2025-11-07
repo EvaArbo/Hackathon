@@ -16,18 +16,16 @@ export const takePhoto = async () => {
     if (!hasPermission) return null;
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
       quality: 0.8,
     });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      return result.assets[0];
+    if (!result.canceled) {
+      return result.assets?.[0] || result;
     }
     return null;
   } catch (error) {
     console.error('Camera error:', error);
-    Alert.alert('Error', `Failed to take photo: ${error.message}`);
+    Alert.alert('Error', `Camera failed: ${error.message}`);
     return null;
   }
 };

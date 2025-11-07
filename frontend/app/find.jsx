@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert 
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { donationAPI } from '../services/api';
+import { storageService } from '../services/storage';
 import Loading from '../components/Loading';
 
 export default function FindScreen() {
@@ -13,32 +13,20 @@ export default function FindScreen() {
 
   const loadDonations = async () => {
     try {
-      const response = await donationAPI.getDonations();
-      setFoodListings(response.data);
+      const donations = await storageService.getDonations();
+      const availableDonations = donations.filter(d => !d.claimed).map(d => ({
+        id: d.id,
+        type: d.foodType,
+        description: d.description,
+        quantity: d.quantity,
+        distance: '0.5 miles',
+        freshness: '3-4 hours',
+        donor: 'Community Member',
+        time: new Date(d.createdAt).toLocaleTimeString()
+      }));
+      setFoodListings(availableDonations);
     } catch (error) {
-      // Fallback to mock data
-      setFoodListings([
-        {
-          id: 1,
-          type: 'Pizza',
-          description: '4 large pizzas from office party',
-          quantity: '16 slices',
-          distance: '0.3 miles',
-          freshness: '2-3 hours',
-          donor: 'Tech Office',
-          time: '30 min ago'
-        },
-        {
-          id: 2,
-          type: 'Sandwiches',
-          description: 'Assorted deli sandwiches',
-          quantity: '8 sandwiches',
-          distance: '0.7 miles',
-          freshness: '4-5 hours',
-          donor: 'Cafe Downtown',
-          time: '1 hour ago'
-        }
-      ]);
+      console.error('Error loading donations:', error);
     } finally {
       setLoading(false);
     }
@@ -50,7 +38,7 @@ export default function FindScreen() {
 
   const handleClaim = async (id) => {
     try {
-      await donationAPI.claimDonation(id);
+      await storageService.claimDonation(id);
       Alert.alert('Success', 'Food claimed! Check your profile for pickup details.');
       loadDonations();
     } catch (error) {
