@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
@@ -10,6 +10,7 @@ export default function FindScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [foodListings, setFoodListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uniqueFoodTypes, setUniqueFoodTypes] = useState([]);
 
   const loadDonations = async () => {
     try {
@@ -25,6 +26,17 @@ export default function FindScreen() {
         time: new Date(d.createdAt).toLocaleTimeString()
       }));
       setFoodListings(availableDonations);
+      
+      // Get unique food types with photos for filter chips
+      const uniqueTypes = [];
+      const seenTypes = new Set();
+      donations.forEach(d => {
+        if (!seenTypes.has(d.foodType) && d.photo) {
+          uniqueTypes.push({ type: d.foodType, photo: d.photo });
+          seenTypes.add(d.foodType);
+        }
+      });
+      setUniqueFoodTypes(uniqueTypes);
     } catch (error) {
       console.error('Error loading donations:', error);
     } finally {
@@ -70,21 +82,17 @@ export default function FindScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Quick Filters */}
-      <ScrollView horizontal style={styles.filters} showsHorizontalScrollIndicator={false}>
-        <TouchableOpacity style={styles.filterChip}>
-          <Text style={styles.filterText}>🍕 Pizza</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.filterChip}>
-          <Text style={styles.filterText}>🥪 Sandwiches</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.filterChip}>
-          <Text style={styles.filterText}>🥗 Salads</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.filterChip}>
-          <Text style={styles.filterText}>🍜 Hot Meals</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      {/* Dynamic Filters */}
+      {uniqueFoodTypes.length > 0 && (
+        <ScrollView horizontal style={styles.filters} showsHorizontalScrollIndicator={false}>
+          {uniqueFoodTypes.map((item, index) => (
+            <TouchableOpacity key={index} style={styles.filterChip}>
+              <Image source={{ uri: item.photo }} style={styles.filterImage} />
+              <Text style={styles.filterText}>{item.type}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {/* Food Listings */}
       {loading ? (
@@ -187,16 +195,26 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     backgroundColor: 'white',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 120,
+    height: 120,
+    borderRadius: 16,
+    marginRight: 16,
     borderWidth: 1,
     borderColor: '#ddd',
+    overflow: 'hidden',
+  },
+  filterImage: {
+    width: '100%',
+    height: 90,
+    resizeMode: 'cover',
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 10,
     color: '#333',
+    textAlign: 'center',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    fontWeight: '600',
   },
   listings: {
     flex: 1,

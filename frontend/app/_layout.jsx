@@ -7,6 +7,8 @@ export default function RootLayout() {
         headerShown: false,
       }}
     >
+      <Stack.Screen name="login" />
+      <Stack.Screen name="signup" />
       <Stack.Screen name="index" />
       <Stack.Screen name="donate" />
       <Stack.Screen name="find" />

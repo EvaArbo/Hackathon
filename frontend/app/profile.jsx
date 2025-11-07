@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
@@ -9,6 +9,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
+  const [claimedItems, setClaimedItems] = useState([]);
 
   useEffect(() => {
     loadProfile();
@@ -17,7 +18,9 @@ export default function ProfileScreen() {
   const loadProfile = async () => {
     try {
       const profile = await storageService.getUserProfile();
+      const claimed = await storageService.getClaimedItems();
       setUserProfile(profile);
+      setClaimedItems(claimed);
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
@@ -82,8 +85,8 @@ export default function ProfileScreen() {
             <Text style={styles.impactLabel}>Donations Made</Text>
           </View>
           <View style={styles.impactItem}>
-            <Text style={styles.impactNumber}>{userProfile?.peopleHelped || 8}</Text>
-            <Text style={styles.impactLabel}>People Helped</Text>
+            <Text style={styles.impactNumber}>{userProfile?.itemsClaimed || 0}</Text>
+            <Text style={styles.impactLabel}>Items Claimed</Text>
           </View>
         </View>
         <View style={styles.carbonSaved}>
@@ -104,6 +107,35 @@ export default function ProfileScreen() {
             </View>
           ))}
         </View>
+      </View>
+
+      {/* Claimed Items */}
+      <View style={styles.claimedSection}>
+        <Text style={styles.sectionTitle}>🎆 Your Claimed Items</Text>
+        {claimedItems.length === 0 ? (
+          <View style={styles.emptyClaimedState}>
+            <Text style={styles.emptyIcon}>😋</Text>
+            <Text style={styles.emptyTitle}>No items claimed yet</Text>
+            <Text style={styles.emptySubtitle}>Visit Find Food to claim available donations</Text>
+          </View>
+        ) : (
+          claimedItems.map((item) => (
+            <View key={item.id} style={styles.claimedItem}>
+              {item.photo && (
+                <Image source={{ uri: item.photo }} style={styles.claimedImage} />
+              )}
+              <View style={styles.claimedInfo}>
+                <Text style={styles.claimedType}>{item.foodType}</Text>
+                <Text style={styles.claimedDescription}>{item.description}</Text>
+                <Text style={styles.claimedQuantity}>Quantity: {item.quantity}</Text>
+                <Text style={styles.claimedDate}>Claimed: {new Date(item.claimedAt).toLocaleDateString()}</Text>
+              </View>
+              <View style={styles.claimedStatus}>
+                <Text style={styles.statusText}>✓ Claimed</Text>
+              </View>
+            </View>
+          ))
+        )}
       </View>
 
       {/* Recent Activity */}
@@ -376,5 +408,77 @@ const styles = StyleSheet.create({
   menuArrow: {
     fontSize: 20,
     color: '#666',
+  },
+  claimedSection: {
+    margin: 20,
+    marginTop: 0,
+  },
+  emptyClaimedState: {
+    backgroundColor: 'white',
+    padding: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    elevation: 1,
+  },
+  emptyIcon: {
+    fontSize: 40,
+    marginBottom: 15,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  claimedItem: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 15,
+    flexDirection: 'row',
+    elevation: 2,
+  },
+  claimedImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    marginRight: 15,
+  },
+  claimedInfo: {
+    flex: 1,
+  },
+  claimedType: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  claimedDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+  },
+  claimedQuantity: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 3,
+  },
+  claimedDate: {
+    fontSize: 12,
+    color: '#888',
+  },
+  claimedStatus: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusText: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: 'bold',
   },
 });

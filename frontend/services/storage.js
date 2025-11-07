@@ -39,12 +39,27 @@ export const storageService = {
     try {
       const donations = await this.getDonations();
       const updated = donations.map(d => 
-        d.id === id ? { ...d, claimed: true, claimedAt: new Date().toISOString() } : d
+        d.id === id ? { ...d, claimed: true, claimedAt: new Date().toISOString(), claimedBy: 'user' } : d
       );
       await AsyncStorage.setItem(KEYS.DONATIONS, JSON.stringify(updated));
+      
+      // Update user stats
+      const profile = await this.getUserProfile();
+      profile.itemsClaimed = (profile.itemsClaimed || 0) + 1;
+      await this.saveUserProfile(profile);
     } catch (error) {
       console.error('Error claiming donation:', error);
       throw error;
+    }
+  },
+
+  async getClaimedItems() {
+    try {
+      const donations = await this.getDonations();
+      return donations.filter(d => d.claimed && d.claimedBy === 'user');
+    } catch (error) {
+      console.error('Error getting claimed items:', error);
+      return [];
     }
   },
 
