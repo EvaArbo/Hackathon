@@ -1,9 +1,35 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { storageService } from '../services/storage';
+import Loading from '../components/Loading';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState(null);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const profile = await storageService.getUserProfile();
+      setUserProfile(profile);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+  if (loading) {
+    return <Loading message="Loading profile..." />;
+  }
 
   const badges = [
     { id: 1, name: 'First Donation', icon: '🥇', earned: true },
@@ -38,9 +64,9 @@ export default function ProfileScreen() {
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>👤</Text>
         </View>
-        <Text style={styles.userName}>Food Hero</Text>
-        <Text style={styles.userType}>Community Donor</Text>
-        <Text style={styles.joinDate}>Member since Oct 2024</Text>
+        <Text style={styles.userName}>{userProfile?.name || 'Food Hero'}</Text>
+        <Text style={styles.userType}>{userProfile?.type || 'Community Donor'}</Text>
+        <Text style={styles.joinDate}>Member since {userProfile?.joinDate || 'Oct 2024'}</Text>
       </View>
 
       {/* Impact Stats */}
@@ -48,20 +74,20 @@ export default function ProfileScreen() {
         <Text style={styles.impactTitle}>🌟 Your Impact</Text>
         <View style={styles.impactStats}>
           <View style={styles.impactItem}>
-            <Text style={styles.impactNumber}>47</Text>
+            <Text style={styles.impactNumber}>{userProfile?.mealsSaved || 47}</Text>
             <Text style={styles.impactLabel}>Meals Saved</Text>
           </View>
           <View style={styles.impactItem}>
-            <Text style={styles.impactNumber}>12</Text>
+            <Text style={styles.impactNumber}>{userProfile?.donationsMade || 12}</Text>
             <Text style={styles.impactLabel}>Donations Made</Text>
           </View>
           <View style={styles.impactItem}>
-            <Text style={styles.impactNumber}>8</Text>
+            <Text style={styles.impactNumber}>{userProfile?.peopleHelped || 8}</Text>
             <Text style={styles.impactLabel}>People Helped</Text>
           </View>
         </View>
         <View style={styles.carbonSaved}>
-          <Text style={styles.carbonText}>🌱 Carbon Footprint Reduced: 23.5 kg CO₂</Text>
+          <Text style={styles.carbonText}>🌱 Carbon Footprint Reduced: {userProfile?.carbonReduced || 23.5} kg CO₂</Text>
         </View>
       </View>
 
