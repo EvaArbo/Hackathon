@@ -1,7 +1,10 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { takePhoto } from '../services/camera';
+import { donationAPI } from '../services/api';
+import Loading from '../components/Loading';
 
 export default function DonateScreen() {
   const router = useRouter();
@@ -9,14 +12,48 @@ export default function DonateScreen() {
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('');
   const [location, setLocation] = useState('');
+  const [photo, setPhoto] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleImageUpload = () => {
-    Alert.alert('Camera', 'AI Food Recognition would activate camera here');
+  const handleImageUpload = async () => {
+    try {
+      const result = await takePhoto();
+      if (result) {
+        console.log('Photo taken:', result);
+        setPhoto(result);
+        setFoodType('Pizza'); // Mock AI recognition
+        Alert.alert('Success', 'Photo captured successfully!');
+      } else {
+        console.log('No photo taken');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      Alert.alert('Error', 'Failed to capture photo');
+    }
   };
 
-  const handleSubmit = () => {
-    Alert.alert('Success', 'Food donation posted! Recipients will be notified.');
-    router.back();
+  const handleSubmit = async () => {
+    if (!foodType || !description || !quantity || !location) {
+      Alert.alert('Error', 'Please fill all fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await donationAPI.createDonation({
+        foodType,
+        description,
+        quantity,
+        location,
+        photo: photo?.uri,
+      });
+      Alert.alert('Success', 'Food donation posted!');
+      router.back();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to post donation');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,9 +69,15 @@ export default function DonateScreen() {
 
       {/* AI Food Recognition */}
       <TouchableOpacity style={styles.cameraButton} onPress={handleImageUpload}>
-        <Text style={styles.cameraIcon}>📷</Text>
-        <Text style={styles.cameraText}>Take Photo for AI Recognition</Text>
-        <Text style={styles.cameraSubtext}>AI will identify food type & freshness</Text>
+        {photo ? (
+          <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
+        ) : (
+          <>
+            <Text style={styles.cameraIcon}>📷</Text>
+            <Text style={styles.cameraText}>Take Photo for AI Recognition</Text>
+            <Text style={styles.cameraSubtext}>AI will identify food type & freshness</Text>
+          </>
+        )}
       </TouchableOpacity>
 
       {/* Food Details */}
@@ -94,9 +137,11 @@ export default function DonateScreen() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitText}>Post Donation</Text>
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
+        <Text style={styles.submitText}>{loading ? 'Posting...' : 'Post Donation'}</Text>
       </TouchableOpacity>
+
+      {loading && <Loading message="Posting donation..." />}
     </ScrollView>
   );
 }
@@ -225,5 +270,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
+  },
+  photoPreview: {
+    width: '100%',
+    height: 120,
+    borderRadius: 10,
   },
 });

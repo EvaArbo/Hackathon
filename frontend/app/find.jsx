@@ -1,44 +1,62 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { donationAPI } from '../services/api';
+import Loading from '../components/Loading';
 
 export default function FindScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [foodListings, setFoodListings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const foodListings = [
-    {
-      id: 1,
-      type: 'Pizza',
-      description: '4 large pizzas from office party',
-      quantity: '16 slices',
-      distance: '0.3 miles',
-      freshness: '2-3 hours',
-      donor: 'Tech Office',
-      time: '30 min ago'
-    },
-    {
-      id: 2,
-      type: 'Sandwiches',
-      description: 'Assorted deli sandwiches',
-      quantity: '8 sandwiches',
-      distance: '0.7 miles',
-      freshness: '4-5 hours',
-      donor: 'Cafe Downtown',
-      time: '1 hour ago'
-    },
-    {
-      id: 3,
-      type: 'Salad & Soup',
-      description: 'Fresh garden salads and tomato soup',
-      quantity: '6 servings',
-      distance: '1.1 miles',
-      freshness: '3-4 hours',
-      donor: 'Restaurant',
-      time: '45 min ago'
+  const loadDonations = async () => {
+    try {
+      const response = await donationAPI.getDonations();
+      setFoodListings(response.data);
+    } catch (error) {
+      // Fallback to mock data
+      setFoodListings([
+        {
+          id: 1,
+          type: 'Pizza',
+          description: '4 large pizzas from office party',
+          quantity: '16 slices',
+          distance: '0.3 miles',
+          freshness: '2-3 hours',
+          donor: 'Tech Office',
+          time: '30 min ago'
+        },
+        {
+          id: 2,
+          type: 'Sandwiches',
+          description: 'Assorted deli sandwiches',
+          quantity: '8 sandwiches',
+          distance: '0.7 miles',
+          freshness: '4-5 hours',
+          donor: 'Cafe Downtown',
+          time: '1 hour ago'
+        }
+      ]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    loadDonations();
+  }, []);
+
+  const handleClaim = async (id) => {
+    try {
+      await donationAPI.claimDonation(id);
+      Alert.alert('Success', 'Food claimed! Check your profile for pickup details.');
+      loadDonations();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to claim food');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -81,6 +99,9 @@ export default function FindScreen() {
       </ScrollView>
 
       {/* Food Listings */}
+      {loading ? (
+        <Loading message="Loading donations..." />
+      ) : (
       <ScrollView style={styles.listings}>
         {foodListings.map((item) => (
           <TouchableOpacity key={item.id} style={styles.listingCard}>
@@ -111,13 +132,14 @@ export default function FindScreen() {
 
             <View style={styles.listingFooter}>
               <Text style={styles.donorName}>From: {item.donor}</Text>
-              <TouchableOpacity style={styles.claimButton}>
+              <TouchableOpacity style={styles.claimButton} onPress={() => handleClaim(item.id)}>
                 <Text style={styles.claimText}>Claim</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
+      )}
 
       {/* Emergency Request */}
       <TouchableOpacity style={styles.emergencyButton}>

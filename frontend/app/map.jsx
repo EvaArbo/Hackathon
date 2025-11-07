@@ -1,9 +1,35 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { useState, useEffect } from 'react';
+import MapView, { Marker } from 'react-native-maps';
+import { getCurrentLocation } from '../services/location';
 
 export default function MapScreen() {
   const router = useRouter();
+  const [userLocation, setUserLocation] = useState(null);
+  const [region, setRegion] = useState({
+    latitude: 40.7128,
+    longitude: -74.0060,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
+
+  useEffect(() => {
+    loadUserLocation();
+  }, []);
+
+  const loadUserLocation = async () => {
+    const location = await getCurrentLocation();
+    if (location) {
+      setUserLocation(location);
+      setRegion({
+        ...location,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      });
+    }
+  };
 
   const mapLocations = [
     { id: 1, type: 'donation', name: 'Pizza Available', distance: '0.3 mi', lat: 40.7128, lng: -74.0060 },
@@ -21,32 +47,29 @@ export default function MapScreen() {
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Food Map</Text>
-        <TouchableOpacity style={styles.locationButton}>
+        <TouchableOpacity style={styles.locationButton} onPress={loadUserLocation}>
           <Text style={styles.locationIcon}>📍</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Map Placeholder */}
+      {/* Real Map */}
       <View style={styles.mapContainer}>
-        <View style={styles.mapPlaceholder}>
-          <Text style={styles.mapText}>🗺️</Text>
-          <Text style={styles.mapLabel}>Interactive Map</Text>
-          <Text style={styles.mapSubtext}>Google Maps integration would show real locations</Text>
-          
-          {/* Mock Map Pins */}
-          <View style={[styles.mapPin, styles.donationPin, { top: 60, left: 80 }]}>
-            <Text style={styles.pinIcon}>🍕</Text>
-          </View>
-          <View style={[styles.mapPin, styles.fridgePin, { top: 120, left: 150 }]}>
-            <Text style={styles.pinIcon}>🏠</Text>
-          </View>
-          <View style={[styles.mapPin, styles.shelterPin, { top: 180, left: 200 }]}>
-            <Text style={styles.pinIcon}>🏢</Text>
-          </View>
-          <View style={[styles.mapPin, styles.donationPin, { top: 100, left: 250 }]}>
-            <Text style={styles.pinIcon}>🥪</Text>
-          </View>
-        </View>
+        <MapView
+          style={styles.map}
+          region={region}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
+        >
+          {mapLocations.map((location) => (
+            <Marker
+              key={location.id}
+              coordinate={{ latitude: location.lat, longitude: location.lng }}
+              title={location.name}
+              description={location.distance}
+              pinColor={location.type === 'donation' ? '#4CAF50' : location.type === 'fridge' ? '#2196F3' : '#FF9800'}
+            />
+          ))}
+        </MapView>
       </View>
 
       {/* Map Legend */}
@@ -137,48 +160,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     overflow: 'hidden',
   },
-  mapPlaceholder: {
+  map: {
     flex: 1,
-    backgroundColor: '#e8f5e8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  mapText: {
-    fontSize: 60,
-    marginBottom: 10,
-  },
-  mapLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2d5016',
-  },
-  mapSubtext: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 5,
-  },
-  mapPin: {
-    position: 'absolute',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 3,
-  },
-  donationPin: {
-    backgroundColor: '#4CAF50',
-  },
-  fridgePin: {
-    backgroundColor: '#2196F3',
-  },
-  shelterPin: {
-    backgroundColor: '#FF9800',
-  },
-  pinIcon: {
-    fontSize: 16,
   },
   legend: {
     backgroundColor: 'white',
