@@ -1,23 +1,22 @@
 from flask import Flask
 from flask_cors import CORS
+from database import init_db
 from routes.food import food_bp
 from routes.donations import donations_bp
-from dotenv import load_dotenv
-import os
+from routes.users import users_bp
 
-load_dotenv()
-app = Flask(_name_)
+app = Flask(__name__)
 CORS(app)
-
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
-db.init_app(app)
+init_db(app)
 
 app.register_blueprint(food_bp, url_prefix="/api/food")
 app.register_blueprint(donations_bp, url_prefix="/api/donations")
+app.register_blueprint(users_bp, url_prefix="/api/users")
 
 @app.route("/")
 def home():
-    return {"message": "Waste Not API running"}
+    return {"message": "waste_not API is running"}
 
-if __name__== "_main_":
+
+if __name__ == "__main__":
     app.run(debug=True)
